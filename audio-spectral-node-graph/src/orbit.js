@@ -48,7 +48,8 @@ export class Orbit {
     // back away as fast as the box grows, come closer slowly
     const out = 1 - Math.exp(-10 * dt);
     const back = 1 - Math.exp(-1.2 * dt);
-    this.distance += (target - this.distance) * (target > this.distance ? out : back);
+    this.distance +=
+      (target - this.distance) * (target > this.distance ? out : back);
     const follow = 1 - Math.exp(-5 * dt);
     this.center = this.center.map((c, i) => c + (center[i] - c) * follow);
   }

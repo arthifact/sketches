@@ -1,5 +1,5 @@
-// Features use magnitudes scaled to 0–255. Centroid and spread are
-// normalized to Nyquist; flux is RMS change, rather than positive-only flux.
+// Spectra come in as magnitudes from 0 to 255. Centroid and spread are
+// fractions of Nyquist.
 const clamp = (value, lo, hi) => Math.min(hi, Math.max(lo, value));
 
 export function spectralCentroid(spectrum) {
@@ -63,8 +63,7 @@ export function bandEnergy(spectrum, lowHz, highHz, sampleRate) {
 export const hzToMel = (hz) => 2595 * Math.log10(1 + hz / 700);
 export const melToHz = (mel) => 700 * (10 ** (mel / 2595) - 1);
 
-// Average overlapping, mel-spaced ranges and normalize their peak to one.
-// These are rectangular ranges, not a triangular mel filterbank or MFCCs.
+// Energy in overlapping mel-spaced bands, scaled so the loudest is one.
 export function melEnergies(spectrum, { bands, maxFreq, sampleRate }) {
   const output = new Array(bands).fill(0);
   if (spectrum.length === 0) return output;

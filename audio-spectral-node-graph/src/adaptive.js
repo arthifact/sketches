@@ -5,14 +5,14 @@ const clamp = (value, low = 0, high = 1) =>
 export const smooth = (current, target, seconds, dt) =>
   target + (current - target) * Math.exp(-dt / seconds);
 
-// Linear magnitudes preserve spectral shape when recording gain changes.
-// Normalization affects analysis only, never the volume of playback.
+// Linear magnitudes scaled to the loudest bin, so a quiet recording looks
+// like a loud one. Only the analysis sees this, never the playback.
 export function normalizedSpectrum(decibels) {
   const magnitudes = Float32Array.from(decibels, (db, i) =>
     i > 0 && Number.isFinite(db) ? 10 ** (db / 20) : 0,
   );
   const peak = Math.max(0, ...magnitudes);
-  // Suppress bins below -54 dB relative to the peak (e.g. PCM quantization noise).
+  // drop bins more than 54 dB below the peak
   return magnitudes.map((value) =>
     peak > 1e-10 && value >= peak * 0.002 ? (255 * value) / peak : 0,
   );
@@ -33,7 +33,7 @@ export class AdaptiveAnalysis {
 
   update({ spectrum, rms, sampleRate, dt }) {
     this.elapsed += dt;
-    // Follow quiet passages too; a loud intro should not set the whole track.
+    // follow quiet passages too, so a loud intro does not set the whole track
     this.reference = Math.max(rms, this.reference * Math.exp(-dt / 0.9));
     const active = rms > Math.max(0.00001, this.reference * 0.007);
     const targetLevel = active

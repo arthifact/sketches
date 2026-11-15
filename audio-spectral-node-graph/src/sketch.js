@@ -12,18 +12,10 @@ import {
   spectralTilt,
 } from './spectral.js';
 
-// ═══════════════════════════════════════════════════════════════
-// SPATIO-TEMPORAL SPECTRAL NODE GRAPH
-// ═══════════════════════════════════════════════════════════════
-//
 // Nodes live in a 3D world. A box follows them: it grows the moment
 // the sound spreads out and shrinks back when it settles. The camera
 // only turns around the centre of that box, at a distance that keeps
 // the whole box in view, so the graph is always on screen.
-
-// ─────────────────────────────────────────────────────────────
-// GLOBAL STATE
-// ─────────────────────────────────────────────────────────────
 
 const state = {
   fft: null,
@@ -57,10 +49,6 @@ const state = {
 };
 
 const orbit = new Orbit();
-
-// ═══════════════════════════════════════════════════════════════
-// MAIN LIFECYCLE
-// ═══════════════════════════════════════════════════════════════
 
 let player;
 let ui;
@@ -96,10 +84,6 @@ function initStars() {
     });
   }
 }
-
-// ──────────────────────────────────────────────────────────
-// DRAW LOOP
-// ──────────────────────────────────────────────────────────
 
 function draw() {
   const bgAlpha = map(constrain(state.bass.pulse, 0, 1.2), 0, 1.2, 88, 68);
@@ -150,11 +134,7 @@ function updateNodeLifecycle() {
   });
 }
 
-// ═══════════════════════════════════════════════════════════════
-// THE BOX
-// ═══════════════════════════════════════════════════════════════
-
-// Grow fast so nothing pokes out for long, shrink slowly so it breathes.
+// grow fast so nothing pokes out for long, shrink slowly so it breathes
 function updateBox(world, dt) {
   const pad = CONFIG.box.pad;
   const lo = [Infinity, Infinity, Infinity];
@@ -201,7 +181,8 @@ function drawBox() {
   const corners = [];
   for (const x of [a[0], b[0]])
     for (const y of [a[1], b[1]])
-      for (const z of [a[2], b[2]]) corners.push(orbit.project([x, y, z], width, height));
+      for (const z of [a[2], b[2]])
+        corners.push(orbit.project([x, y, z], width, height));
 
   // corners differ in one coordinate along an edge: indices 1, 2 and 4 apart
   const edges = [];
@@ -222,10 +203,6 @@ function drawBox() {
     line(q.sx, q.sy, lerp(q.sx, p.sx, t), lerp(q.sy, p.sy, t));
   }
 }
-
-// ═══════════════════════════════════════════════════════════════
-// FLOW & UNCLUTTER
-// ═══════════════════════════════════════════════════════════════
 
 function applyNebulaWarp(nx, ny, node) {
   const t = frameCount * 0.0035;
@@ -286,10 +263,6 @@ function applyUnclutterOffsets(proj) {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// AUDIO ANALYSIS & NODE SPAWNING
-// ═══════════════════════════════════════════════════════════════
-
 function processAudio() {
   const dt = Math.min(deltaTime / 1000, 0.08);
   state.analysisElapsed += dt;
@@ -304,7 +277,7 @@ function processAudio() {
       dt: state.analysisElapsed,
     });
     state.analysisElapsed = 0;
-    // Preserve the original spectrum mapping, with a fallback below its floor.
+    // very quiet files can read all zeros; fall back to the normalized one
     state.liveSpectrum = spectrum.some((value) => value > 0)
       ? spectrum
       : adaptiveSpectrum;
@@ -315,7 +288,6 @@ function processAudio() {
   }
   state.liveRMS = rms;
   if (!state.liveSpectrum) return;
-  // Keep the original RMS response, with a visual floor for quiet recordings.
   const visualRMS = Math.max(rms, state.features.level * 0.08);
   updateImmersionState(state.liveSpectrum, visualRMS, state.liveCentroid);
   spawnNodesFromAudio(state.liveSpectrum, state.liveCentroid, visualRMS);
@@ -416,10 +388,6 @@ function spawnNode(mel, centroid, spread, rms, tSec) {
   if (state.nodes.length > CONFIG.nodes.maxCount) state.nodes.shift();
 }
 
-// ═══════════════════════════════════════════════════════════════
-// NODE BOUNDS & WORLD POSITIONS
-// ═══════════════════════════════════════════════════════════════
-
 function updateNodeBounds() {
   const { nodes, bounds } = state;
   if (nodes.length === 0) return;
@@ -453,8 +421,7 @@ function updateNodeBounds() {
   bounds.tilt.max = lerp(bounds.tilt.max, tMaxT, lf);
 }
 
-// Centroid and spread on a diagonal, tilt as depth, as before, but in
-// world units: nothing is clamped to the screen any more.
+// centroid and spread on a diagonal, tilt as depth
 function worldPositions() {
   const { nodes, bounds, currentBurst } = state;
   const size = CONFIG.world.size;
@@ -470,8 +437,18 @@ function worldPositions() {
     const r2 = 0.7071;
     const rx = (cn - sn) * r2;
     const ry = (cn + sn) * r2;
-    const warped = applyNebulaWarp(rx * size * 0.5 + n.dx, (ry - 0.7071) * size * 0.5 + n.dy, n);
-    let z = map(n.tilt, bounds.tilt.min, bounds.tilt.min + tRange, -depth, depth);
+    const warped = applyNebulaWarp(
+      rx * size * 0.5 + n.dx,
+      (ry - 0.7071) * size * 0.5 + n.dy,
+      n,
+    );
+    let z = map(
+      n.tilt,
+      bounds.tilt.min,
+      bounds.tilt.min + tRange,
+      -depth,
+      depth,
+    );
     if (n.burstId === currentBurst) z += map(n.tSec, tMinWin, tMaxCur, -50, 50);
     return [warped.x, warped.y, z];
   });
@@ -480,10 +457,6 @@ function worldPositions() {
 function calculateRenderOrder(projections) {
   return nodeRenderOrder(state.nodes, projections, state.currentBurst);
 }
-
-// ═══════════════════════════════════════════════════════════════
-// ATMOSPHERIC DEPTH HELPERS
-// ═══════════════════════════════════════════════════════════════
 
 function depthFog(zDepth) {
   return constrain(
@@ -500,10 +473,6 @@ function atmosphericAdjust(zDepth) {
     briLoss: fog * CONFIG.atmosphere.maxBrightnessDrop,
   };
 }
-
-// ═══════════════════════════════════════════════════════════════
-// RENDERING
-// ═══════════════════════════════════════════════════════════════
 
 function drawEdges3D(projections) {
   const K = 6,
@@ -563,7 +532,7 @@ function drawNodes3D(renderOrder, projections) {
     const nodeSat = isCurrent ? 0 : max(30, 70 - atmo.satLoss * 0.6);
     const nodeBri = max(55, 100 - atmo.briLoss);
 
-    // ── BURST HIGHLIGHT (multi-layer glow + beacon — always visible) ──
+    // the current burst: layered glow and a beacon
     if (isCurrent) {
       for (let g = hlCfg.glowLayers - 1; g >= 0; g--) {
         const glowSize = sz3 * hlCfg.glowExpand[g];
@@ -586,19 +555,16 @@ function drawNodes3D(renderOrder, projections) {
       ellipse(p.sx, p.sy, beaconR * 2, beaconR * 2);
     }
 
-    // ── Node square outline ──
     noFill();
     stroke(n.hue, nodeSat, nodeBri, alpha);
     strokeWeight(isCurrent ? 1.8 : max(0.2, 0.8 * sizeMult));
     rectMode(CENTER);
     rect(p.sx, p.sy, sz3, sz3);
 
-    // ── Node center dot ──
     noStroke();
     fill(n.hue, max(50, 88 - atmo.satLoss * 0.5), nodeBri, alpha);
     ellipse(p.sx, p.sy, sz3 * 0.28, sz3 * 0.28);
 
-    // ── Labels ──
     if (sz3 > 7 && (isCurrent || life > 0.3)) {
       drawNodeLabel(n, p, alpha, sz3, atmo);
     }
@@ -683,10 +649,14 @@ function drawOrbitHint() {
     cy - rh - 5,
   );
   fill(0, 0, 24);
-  text(orbit.auto ? 'drag \u00b7 click to stop' : 'drag \u00b7 click to spin', cx, cy + rh + 11);
+  text(
+    orbit.auto ? 'drag \u00b7 click to stop' : 'drag \u00b7 click to spin',
+    cx,
+    cy + rh + 11,
+  );
 }
 
-// ── FREQUENCY BAR (live spectrum overlay + centroid marker) ──
+// spectrum bar with the centroid and spread on top
 
 function drawFreqBar() {
   const barWidth = min(480, width - 44),
@@ -694,14 +664,12 @@ function drawFreqBar() {
     bx = 22,
     by = 16;
 
-  // Static rainbow gradient (reference scale)
   for (let i = 0; i < barWidth; i++) {
     stroke(map(i, 0, barWidth, 0, 260), 90, 95, 88);
     strokeWeight(1);
     line(bx + i, by, bx + i, by + barHeight);
   }
 
-  // Live spectrum overlay
   if (state.liveSpectrum && player.isPlaying) {
     const spec = state.liveSpectrum;
     const nyquist = getAudioContext().sampleRate / 2;
@@ -721,7 +689,6 @@ function drawFreqBar() {
       rect(bx + i, by - h, 1, h);
     }
 
-    // Centroid hairline
     const centroidHz = state.liveCentroid * nyquist;
     const centroidX =
       bx + constrain(centroidHz / CONFIG.audio.maxFreq, 0, 1) * barWidth;
@@ -729,7 +696,6 @@ function drawFreqBar() {
     strokeWeight(1.2);
     line(centroidX, by - overlayH - 2, centroidX, by + barHeight + 2);
 
-    // Spread bracket
     const spreadHalfPx =
       ((state.liveSpread * nyquist) / CONFIG.audio.maxFreq) * barWidth * 0.5;
     stroke(0, 0, 60, 30);
@@ -741,7 +707,6 @@ function drawFreqBar() {
       by - overlayH - 2,
     );
 
-    // Centroid label
     noStroke();
     fill(0, 0, 72, 60);
     textSize(7);
@@ -755,7 +720,6 @@ function drawFreqBar() {
     );
   }
 
-  // Hz scale labels
   noStroke();
   fill(0, 0, 70);
   textSize(9);
@@ -799,7 +763,12 @@ function drawReadoutPanel() {
     ['BOOM', state.music.boom.toFixed(3)],
     ['NODES', state.nodes.length + '/' + CONFIG.nodes.maxCount],
     ['BURST', '#' + state.currentBurst],
-    ['BOX', boxSize().map((v) => v.toFixed(0)).join(' \u00d7 ')],
+    [
+      'BOX',
+      boxSize()
+        .map((v) => v.toFixed(0))
+        .join(' \u00d7 '),
+    ],
   ];
   for (const [label, value] of entries) {
     fill(0, 0, cfg.labelColor);
@@ -837,10 +806,6 @@ function drawVignette() {
     ellipse(width * 0.5, height * 0.5, w, h);
   }
 }
-
-// ═══════════════════════════════════════════════════════════════
-// PHYSICS
-// ═══════════════════════════════════════════════════════════════
 
 function applyRepulsion() {
   const { nodes, currentBurst } = state;
@@ -898,12 +863,7 @@ function applyRepulsion() {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// INPUT & INTERACTION
-// ═══════════════════════════════════════════════════════════════
-
-// Drag turns the camera around the box; a click without dragging
-// starts or stops the automatic turning.
+// drag turns the camera around the box, a click starts or stops it
 function mousePressed(event) {
   if (event?.target?.tagName !== 'CANVAS') return;
   state.drag.active = true;
@@ -935,10 +895,6 @@ function keyPressed(event) {
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
 }
-
-// ─────────────────────────────────────────────────────────────
-// FULLSCREEN & SCENE RESET
-// ─────────────────────────────────────────────────────────────
 
 async function toggleFullscreen() {
   try {
@@ -972,7 +928,6 @@ function resetAudioState() {
   orbit.reset();
 }
 
-// p5 global mode discovers lifecycle callbacks on window.
 Object.assign(window, {
   setup,
   draw,

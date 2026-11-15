@@ -30,7 +30,6 @@ const CONFIG = {
   },
 
   spectral: {
-    fluxThreshold: 0.01,
     unclutterCBins: 32,
     unclutterSBins: 22,
     unclutterStepPx: 6.0,
