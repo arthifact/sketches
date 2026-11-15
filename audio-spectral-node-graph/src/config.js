@@ -1,5 +1,17 @@
-// Scene tuning. Time-based camera settings use seconds; node lifetimes use frames.
+// Scene tuning. Node lifetimes use frames at 60 Hz; box rates are per second.
 const CONFIG = {
+  world: {
+    size: 1000, // width of the centroid-spread plane
+    depth: 320, // tilt spans -depth to depth
+  },
+
+  box: {
+    pad: 30, // world units around the outermost nodes
+    rest: 200, // half size before any sound
+    growRate: 9,
+    shrinkRate: 2,
+  },
+
   audio: {
     fftBins: 1024,
     melBands: 40,
@@ -26,52 +38,12 @@ const CONFIG = {
     unclutterStrength: 0.82,
   },
 
-  camera: {
-    trackWindowSec: 1.4,
-    focalBase: 920,
-    focalStartFar: 340,
-    depth: 880,
-    panReturnTimeSec: 0.6,
-    zoomReturnTimeSec: 0.24,
-    nearZRatio: 0.42,
-    nearBias: 88,
-    maxScale: 1.85,
-    maxPanRangeX: 0.48,
-    maxPanRangeY: 0.48,
-    minGuardPad: 0.14,
-    maxGuardPad: 0.3,
-    edgeRecoveryStrength: 2.8,
-  },
-
-  wobble: {
-    speed: 0.0052,
-    yawSpeed: 0.0055,
-    yawVariation: 0.0042,
-    pitchSpeed: 0.004,
-    pitchVariation: 0.0036,
-    pitchSecondary: 0.0022,
-    rollSwing: 0.68,
-    rollSecondary: 0.14,
-  },
-
-  immersion: {
-    tripFarMul: 0.52,
-    tripNearMul: 1.72,
-  },
-
-  input: {
-    dragFriction: 0.92,
-    dragThreshold: 0.0006,
-  },
-
   display: {
     windowSeconds: 11,
     starCount: 180,
   },
 
   composition: {
-    padRelaxed: 0.06,
-    padIntense: 0.02,
     warpAmount: 0.078,
     warpBreath: 0.048,
   },
@@ -82,15 +54,6 @@ const CONFIG = {
     driftDamping: 0.968,
     driftMaxVel: 2.4,
     driftBurstBoost: 3.2,
-  },
-
-  director: {
-    wanderMinFrames: 90,
-    wanderMaxFrames: 220,
-    wanderRangeX: 0.024,
-    wanderRangeY: 0.02,
-    burstKickPan: 36,
-    burstKickZoom: 90,
   },
 
   magic: {
