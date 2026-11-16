@@ -1,5 +1,4 @@
-// One owner for file decoding, playback, and object URL cleanup.
-// The scene only reads this state; controls react through onChange.
+// Loads, plays and pauses one sound file at a time.
 export class AudioPlayer {
   constructor({ fft, amplitude, onChange, onReset }) {
     this.fft = fft;
@@ -60,8 +59,7 @@ export class AudioPlayer {
     try {
       const sound = await new Promise((resolve, reject) => {
         request.cancel = () => {
-          // Disposing a pending p5 SoundFile suppresses its load callback.
-          // Settle the old request ourselves so replacement also releases it.
+          // a disposed SoundFile never calls back, so settle it here
           request.sound?.dispose();
           releaseURL();
           resolve(null);
@@ -73,7 +71,7 @@ export class AudioPlayer {
       this.fft.setInput(this.sound);
       this.amplitude.setInput(this.sound);
       this.sound.onended((sound) => {
-        // p5 updates its playback flags after this callback, including on pause.
+        // p5 sets its flags after this callback, so read them a tick later
         queueMicrotask(() => {
           if (sound !== this.sound) return;
           this.isPlaying = sound.isPlaying();

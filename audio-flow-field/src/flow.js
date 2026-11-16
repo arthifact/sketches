@@ -4,7 +4,7 @@ export function createField(width, height) {
   const area = (width * height) / (1280 * 800);
   const scale = Math.min(1.6, Math.max(0.5, area ** 0.25));
   const cellSize = 20 * scale;
-  // Include a border sample so interpolation also covers partial edge cells.
+  // one extra sample on each axis so partial edge cells still interpolate
   const cols = Math.ceil(width / cellSize) + 1;
   const rows = Math.ceil(height / cellSize) + 1;
   const density = Math.min(2, Math.sqrt(area));
@@ -39,7 +39,6 @@ export function updateField(
       const angle = noise(x * 0.01, y * 0.01, z) * Math.PI * 2;
       const fx = Math.cos(angle) * magnitude + horizontal;
       const fy = Math.sin(angle) * magnitude + vertical;
-      // Turn the audio forces with the field, avoiding a fixed screen-axis bias.
       field.x[i] = fx * c - fy * s;
       field.y[i] = fx * s + fy * c;
     }
@@ -70,7 +69,7 @@ export class Particle {
       ty = gy - y;
     const i = x + y * field.cols,
       below = i + field.cols;
-    // Blend neighboring directions so crossing a cell never snaps the force.
+    // blend the four nearest forces so crossing a cell never snaps
     let fx = mix(
       mix(field.x[i], field.x[i + 1], tx),
       mix(field.x[below], field.x[below + 1], tx),
@@ -103,7 +102,7 @@ export class Particle {
     this.speed = Math.hypot(this.vx, this.vy);
     this.x += this.vx * step;
     this.y += this.vy * step;
-    // Wrap both ends of the trail together, avoiding a line across the screen.
+    // wrap both ends of the trail, or it would draw a line across the screen
     if (this.x < 0 || this.x >= width || this.y < 0 || this.y >= height) {
       this.x = wrap(this.x, width);
       this.y = wrap(this.y, height);

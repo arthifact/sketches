@@ -14,7 +14,7 @@ export function bandEnergy(spectrum, lowHz, highHz, sampleRate) {
   return sum / (last - first + 1);
 }
 
-// Lift quiet recordings for analysis only; playback volume stays unchanged.
+// Quiet recordings are lifted for the analysis only, never the playback.
 export class AudioResponse {
   constructor() {
     this.reference = 0;
@@ -30,7 +30,7 @@ export class AudioResponse {
       Math.max(1, 0.08 / Math.max(this.reference, 0.00001)),
     );
     const targetDb = active ? 20 * Math.log10(gain) : this.gainDb;
-    // Reduce gain quickly on loud arrivals, release it gently into quiet passages.
+    // drop the gain fast when it gets loud, raise it slowly when it gets quiet
     const seconds = targetDb < this.gainDb ? 0.03 : 0.18;
     this.gainDb = targetDb + (this.gainDb - targetDb) * Math.exp(-dt / seconds);
     if (this.spectrum.length !== decibels.length)
@@ -48,7 +48,7 @@ export class AudioResponse {
       if (i > 0) peak = Math.max(peak, this.spectrum[i]);
     }
     return {
-      // Bass keeps its original response; higher tones get a small motion floor.
+      // bass as it is, with a small floor so treble-heavy tracks still move
       energy: Math.max(
         bandEnergy(this.spectrum, 1, 250, sampleRate),
         peak * 0.25,

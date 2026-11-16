@@ -78,7 +78,7 @@ function draw() {
   burst *= 0.88 ** step;
   previousBass = levels.bass;
 
-  // Slow, continuous steering keeps the familiar flow from favoring a diagonal.
+  // turn the whole field slowly so the flow never settles on one diagonal
   heading += dt * (0.12 + (levels.energy / 255) * 0.1);
   updateField(field, zOffset, levels, noise, heading);
   zOffset += (0.0001 + (levels.bass / 255) * 0.0099) * step;
@@ -140,12 +140,10 @@ function windowResized() {
   const oldWidth = width,
     oldHeight = height,
     oldScale = field.scale;
-  // Resize geometry before the next draw; p5 otherwise redraws immediately.
   resizeCanvas(windowWidth, windowHeight, true);
   field = createField(width, height);
   for (const particle of particles)
     particle.resize(oldWidth, oldHeight, width, height, field.scale / oldScale);
 }
 
-// p5 global mode discovers its callbacks on window.
 Object.assign(window, { setup, draw, keyPressed, windowResized });

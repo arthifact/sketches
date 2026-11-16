@@ -3,7 +3,7 @@ export function buildUI({ player, clear, toggleFullscreen }) {
   const loadButton = document.querySelector('#load-audio');
   const playButton = document.querySelector('#play-audio');
   const clearButton = document.querySelector('#clear-field');
-  const fullscreenButton = document.querySelector('#fullscreen');
+  const fullscreenButton = document.querySelector('#fullscreen-button');
   const filename = document.querySelector('#filename');
 
   loadButton.addEventListener('click', () => fileInput.click());
